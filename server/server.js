@@ -1,6 +1,10 @@
 import './config/instrument.js'
 import dns from 'dns'
-dns.setServers(['8.8.8.8', '8.8.4.4'])
+// Vercel automatically sets NODE_ENV to 'production'.
+// So, this says: "If we are NOT on Vercel, use the Google fix."
+if (process.env.NODE_ENV !== 'production') {
+    dns.setServers(['8.8.8.8', '8.8.4.4']);
+}
 
 import express from 'express'
 import cors from 'cors'
