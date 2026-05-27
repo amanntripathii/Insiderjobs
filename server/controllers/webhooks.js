@@ -8,14 +8,19 @@ export const clerkWebhooks = async (req, res)=>{
         //Create a Svix instance with clerk webhook secret
         const whook = new Webhook(process.env.CLERK_WEBHOOK_SECRET)
 
+        // 🚨 FIX 1: Convert the raw buffer to a string for Svix verification
+        const payloadString = req.body.toString('utf8');
+
         //Verifying Headers to ensure req is from clerk
-        await whook.verify(JSON.stringify(req.body), { //stringify() converts the JS object into JSON string 
+        await whook.verify(payloadString, { //stringify() converts the JS object into JSON string 
             "svix-id": req.headers["svix-id"], //svix-id is a header that is sent by clerk to verify the request
             "svix-timestamp": req.headers["svix-timestamp"], //svix-timestamp is a header that is sent by clerk to verify the request
             "svix-signature": req.headers["svix-signature"] //svix-signature is a header that is sent by clerk to verify the request
         }) //Verifying is necessary for security 
-        
-        const {data,type} = req.body //data is the user data, type is the type of event(eg. user created, user deleted, etc.)
+
+        // 🚨 FIX 2: Parse the string back into a JavaScript object so we can use it
+        const parsedBody = JSON.parse(payloadString);
+        const { data, type } = parsedBody; //data is the user data, type is the type of event(eg. user created, user deleted, etc.)
 
         //Switch statemnet to handle different types of events
         switch(type){

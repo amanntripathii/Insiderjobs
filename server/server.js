@@ -27,6 +27,9 @@ await connectDB() //asynchronous function so we use await
 
 //Middlewares
 app.use(cors()) //allow cross origin requests
+
+app.post('/webhooks', express.raw({ type: 'application/json' }), clerkWebhooks) //webhook endpoint to handle clerk events
+
 app.use(express.json()) // allow json format
 
 
@@ -38,7 +41,6 @@ app.get('/', (req, res) => { //default route
 app.get("/debug-sentry", function mainHandler(req, res) {
   throw new Error("My first Sentry error!");
 }); //error on the browser at the route: localhost:5000/debug-sentry
-app.post('/webhooks', clerkWebhooks) //webhook endpoint to handle clerk events
 
 
 
