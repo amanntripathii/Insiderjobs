@@ -17,7 +17,7 @@ export const clerkWebhooks = async (req, res)=>{
             "svix-timestamp": req.headers["svix-timestamp"], //svix-timestamp is a header that is sent by clerk to verify the request
             "svix-signature": req.headers["svix-signature"] //svix-signature is a header that is sent by clerk to verify the request
         }) //Verifying is necessary for security 
-
+        
         // 🚨 FIX 2: Parse the string back into a JavaScript object so we can use it
         const parsedBody = JSON.parse(payloadString);
         const { data, type } = parsedBody; //data is the user data, type is the type of event(eg. user created, user deleted, etc.)
@@ -33,7 +33,7 @@ export const clerkWebhooks = async (req, res)=>{
                     resume: ''
                 }
                 await User.create(userData) //create the user in the database
-                res.json({}) //response back to clerk to confirm receipt of webhook
+                res.status(200).json({}) //response back to clerk to confirm receipt of webhook
                 break;
             }
 
@@ -44,24 +44,26 @@ export const clerkWebhooks = async (req, res)=>{
                     image: data.image_url,
                 }
                 await User.findByIdAndUpdate(data.id, userData) //update the user in the database
-                res.json({})
+                res.status(200).json({})
                 break;
             }
 
             case 'user.deleted': {
                 await User.findByIdAndDelete(data.id) //delete the user from the database
-                res.json({})
+                res.status(200).json({})
                 break;
             }
 
             default:
-            break;
+                // 🚨 FIX 3: You MUST respond to unhandled events, otherwise Clerk times out and says "Failed"
+                res.status(200).json({}) 
+                break;
                 
         }
 
     }catch(error){
-        console.log(error.message)
-        res.json({
+        console.log("WEBHOOK ERROR:", error.message) // Check your terminal for this exact text!
+        res.status(400).json({
             success: false,
             message: "Webhooks Error"
         })
