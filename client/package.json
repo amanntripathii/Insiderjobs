@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@clerk/react": "^6.6.4",
+    "@clerk/react": "^6.7.1",
     "@tailwindcss/vite": "^4.3.0",
     "k-convert": "^1.0.6",
     "moment": "^2.30.1",
