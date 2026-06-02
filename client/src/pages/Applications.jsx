@@ -59,9 +59,9 @@ const Applications = () => {
   }, [user])
 
   return (
-    <>
+    <div className='min-h-screen flex flex-col justify-between'>
       <Navbar />
-      <div className='container px-4 min-h-[65vh] 2xl:px-20 mx-auto my-10'>
+      <div className='container px-4 2xl:px-20 mx-auto my-10 flex-grow'>
         <h2 className='text-xl font-semibold'>Your Resume</h2>
         <div className='flex gap-2 mb-6 mt-3'>
           {
@@ -119,7 +119,7 @@ const Applications = () => {
         </table>
       </div>
       <Footer />
-    </>
+    </div>
   )
 }
 
