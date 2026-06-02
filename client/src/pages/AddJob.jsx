@@ -3,7 +3,11 @@ import { useState, useRef } from 'react'
 import Quill from 'quill'
 import { assets } from '../assets/assets'
 import { useEffect } from 'react'
-import {JobCategories,JobLocations} from '../assets/assets'
+import { JobCategories, JobLocations } from '../assets/assets'
+import { toast } from 'react-toastify'
+import axios from 'axios'
+import { AppContext } from '../context/AppContext'
+import { useContext } from 'react'
 
 const AddJob = () => {
 
@@ -16,66 +20,93 @@ const AddJob = () => {
   const editorRef = useRef(null)
   const quillRef = useRef(null)
 
+  const { companyToken, backendUrl } = useContext(AppContext)
+
+  const onSubmitHandler = async (e) => {
+    e.preventDefault() //Prevents default page reload on submitting
+
+    try {
+      const description = quillRef.current.root.innerHTML
+
+      const { data } = await axios.post(backendUrl + '/api/company/post-job',
+        { title, description, location, category, salary, level },
+        { headers: { token: companyToken } }
+      )
+
+      if (data.success) {
+        toast.success(data.message)
+        setTitle('')
+        setSalary(0)
+        quillRef.current.root.innerHTML = ""
+      } else {
+        toast.error(data.message)
+      }
+
+    } catch (error) {
+      toast.error(error.message)
+    }
+  }
+
   useEffect(() => {
     //Initiate Quill only once
-    if(!quillRef.current && editorRef.current){ 
-      quillRef.current = new Quill(editorRef.current,{
-        theme:'snow'
+    if (!quillRef.current && editorRef.current) {
+      quillRef.current = new Quill(editorRef.current, {
+        theme: 'snow'
       })
     }
   })
 
   return (
-    <form className='container p-4 flex flex-col w-full items-start gap-3'>
-        
-        <div className='w-full'>
-          <p className='mb-2'>Job Title</p>
-          <input className='w-full max-w-lg px-3 py-2 border border-gray-300 rounded cursor-pointer' type="text" placeholder='Type here' onChange={(e) => setTitle(e.target.value)} value={title} required/>
+    <form onSubmit={onSubmitHandler} className='container p-4 flex flex-col w-full items-start gap-3'>
+
+      <div className='w-full'>
+        <p className='mb-2'>Job Title</p>
+        <input className='w-full max-w-lg px-3 py-2 border border-gray-300 rounded cursor-pointer' type="text" placeholder='Type here' onChange={(e) => setTitle(e.target.value)} value={title} required />
+      </div>
+
+      <div className='w-full max-w-lg'>
+        <p className='my-2'>Job Description</p>
+        <div ref={editorRef}>
+
         </div>
+      </div>
 
-        <div className='w-full max-w-lg'>
-          <p className='my-2'>Job Description</p>
-          <div ref={editorRef}>
+      <div className='flex flex-col sm:flex-row gap-2 w-full sm:gap-8'>
 
-          </div>
-        </div>
-
-        <div className='flex flex-col sm:flex-row gap-2 w-full sm:gap-8'>
-
-          <div>
-            <p className='mb-2'>Job Category</p>
-            <select className='w-full px-3 py-2 border-2 border-gray-300 rounded cursor-pointer' onChange={e => setCategory(e.target.value)}>{// options to choose job category
-              JobCategories.map((category,index) => (
-                <option key={index} value={category}>{category}</option>
-              ))
-            }</select>
-          </div>
-
-          <div>
-            <p className='mb-2'>Job Location</p>
-            <select className='w-full px-3 py-2 border-2 border-gray-300 rounded cursor-pointer' onChange={e => setLocation(e.target.value)}>{// options to choose job location
-              JobLocations.map((location,index) => (
-                <option key={index} value={location}>{location}</option>
-              ))
-            }</select>
-          </div>
-
-          <div>
-            <p className='mb-2'>Job Level</p>
-            <select className='w-full px-3 py-2 border-2 border-gray-300 rounded cursor-pointer'onChange={e => setLevel(e.target.value)}>  {/* options to choose job level */}
-              <option value="Beginner Level">Beginner Level</option>
-              <option value="Intermediate Level">Intermediate Level</option>
-              <option value="Senior Level">Expert Level</option>
-            </select>
-          </div>
+        <div>
+          <p className='mb-2'>Job Category</p>
+          <select className='w-full px-3 py-2 border-2 border-gray-300 rounded cursor-pointer' onChange={e => setCategory(e.target.value)}>{// options to choose job category
+            JobCategories.map((category, index) => (
+              <option key={index} value={category}>{category}</option>
+            ))
+          }</select>
         </div>
 
         <div>
-          <p className='mb-2'>Job Salary</p>
-          <input min={0} className='w-full px-3 py-2 border-2 border-gray-300 rounded sm:w-[120px] cursor-pointer' onChange={e => setSalary(e.target.value)} type="Number" placeholder='2500'/>
+          <p className='mb-2'>Job Location</p>
+          <select className='w-full px-3 py-2 border-2 border-gray-300 rounded cursor-pointer' onChange={e => setLocation(e.target.value)}>{// options to choose job location
+            JobLocations.map((location, index) => (
+              <option key={index} value={location}>{location}</option>
+            ))
+          }</select>
         </div>
 
-        <button className='w-28 py-3 mt-4 bg-black text-white rounded cursor-pointer' >ADD</button>
+        <div>
+          <p className='mb-2'>Job Level</p>
+          <select className='w-full px-3 py-2 border-2 border-gray-300 rounded cursor-pointer' onChange={e => setLevel(e.target.value)}>  {/* options to choose job level */}
+            <option value="Beginner Level">Beginner Level</option>
+            <option value="Intermediate Level">Intermediate Level</option>
+            <option value="Senior Level">Expert Level</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <p className='mb-2'>Job Salary</p>
+        <input min={0} className='w-full px-3 py-2 border-2 border-gray-300 rounded sm:w-[120px] cursor-pointer' onChange={e => setSalary(e.target.value)} type="Number" placeholder='2500' />
+      </div>
+
+      <button className='w-28 py-3 mt-4 bg-black text-white rounded cursor-pointer' >ADD</button>
     </form>
   )
 }

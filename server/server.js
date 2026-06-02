@@ -10,8 +10,15 @@ import express from 'express'
 import cors from 'cors'
 import 'dotenv/config'
 import connectDB from './config/db.js'
+import connectCloudinary from './config/cloudinary.js'
 import * as Sentry from '@sentry/node'
 import { clerkWebhooks } from './controllers/webhooks.js'
+import companyRoutes from './routes/companyRoutes.js'
+import jobRoutes from './routes/jobRoutes.js'
+import userRoutes from './routes/userRoutes.js'
+import {clerkMiddleware} from "@clerk/express"
+
+
 
 
 
@@ -22,6 +29,7 @@ const app = express()
 
 //Connect to Database
 await connectDB() //asynchronous function so we use await
+await connectCloudinary()
 
 
 
@@ -32,6 +40,9 @@ app.post('/webhooks', express.raw({ type: 'application/json' }), clerkWebhooks) 
 
 app.use(express.json()) // allow json format
 
+//Use clerk middleware for protected routes (authentication)
+app.use(clerkMiddleware())
+
 
 
 //Routes
@@ -41,6 +52,13 @@ app.get('/', (req, res) => { //default route
 app.get("/debug-sentry", function mainHandler(req, res) {
   throw new Error("My first Sentry error!");
 }); //error on the browser at the route: localhost:5000/debug-sentry
+
+//Company routes
+app.use('/api/company', companyRoutes)
+//Job routes
+app.use('/api/jobs', jobRoutes)
+//User routes
+app.use('/api/users', userRoutes)
 
 
 

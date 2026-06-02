@@ -1,8 +1,8 @@
 import React from 'react';
-import {useNavigate, useParams} from 'react-router-dom';
-import {useState} from 'react'
-import {assets} from '../assets/assets';
-import {useContext} from 'react'
+import { useNavigate, useParams } from 'react-router-dom';
+import { useState } from 'react'
+import { assets } from '../assets/assets';
+import { useContext } from 'react'
 import { AppContext } from '../context/AppContext';
 import { useEffect } from 'react';
 import Loading from '../components/Loading';
@@ -11,32 +11,88 @@ import kconvert from 'k-convert'; // to convert salary to 'k' format
 import moment from 'moment'; // to format date
 import JobCard from '../components/JobCard';
 import Footer from '../components/Footer';
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import { useAuth } from '@clerk/react';
 
 
 const ApplyJob = () => {
 
+  const { getToken } = useAuth()
+
   const { id } = useParams() // to get job id from url
-  const [jobData,setJobData] = useState(null) // to store job data
+  const [jobData, setJobData] = useState(null) // to store job data
+  const [isAlreadyApplied, setIsAlreadyApplied] = useState(false) // To check if the user has already applied for the job
 
-  const { jobs } = useContext(AppContext) // to get job data from app context
+  const { jobs, backendUrl, userData, userApplications, fetchUserApplications } = useContext(AppContext) // to get job data from app context
 
-  const fetchJob = async() => {
-    const data = jobs.filter(job => job._id === id) // to fetch job data based on id from context
-    if(data.length !== 0){
-      setJobData(data[0]) // set job data
-      console.log(data[0])
+  const navigate = useNavigate() // to navigate to different pages
+
+  const fetchJob = async () => {
+
+    try {
+      const { data } = await axios.get(backendUrl + `/api/jobs/${id}`)
+
+      if (data.success) {
+        setJobData(data.job)
+      } else {
+        toast.error(data.message)
+      }
+    } catch (error) {
+      toast.error(error.message)
+    }
+
+  }
+
+  const applyHandler = async () => {
+    try {
+
+      if (!userData) {
+        return toast.error('Login to apply for the job')
+      }
+
+      if (!userData.resume) {
+        navigate('/applications')
+        return toast.error('Upload resume to apply')
+      }
+
+      const token = await getToken()
+
+      const { data } = await axios.post(backendUrl + '/api/users/apply',
+        { jobId: jobData._id },
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+
+      if (data.success) {
+        toast.success(data.message)
+        fetchUserApplications()
+      } else {
+        toast.error(data.message)
+      }
+
+    } catch (error) {
+      toast.error(error.message)
     }
   }
 
-  useEffect(()=>{
-    if(jobs.length > 0){
-      fetchJob(); // fetch job data when job list is loaded
+  const checkAlreadyApplied = () => {
+    const hasApplied = userApplications.some(item => item.jobId._id === jobData._id)
+    setIsAlreadyApplied(hasApplied)
+  }
+
+  useEffect(() => {
+    fetchJob(); // fetch job data when job list is loaded
+  }, [id])
+
+  useEffect(() => {
+    if (userApplications.length > 0 && jobData) {
+      checkAlreadyApplied()
     }
-  },[id,jobs])
+  }, [userApplications, jobData, id])
 
   return jobData ? (
     <>
-      <Navbar/>
+      <Navbar />
 
       <div className='min-h-screen flex flex-col py-10 container px-4 2xl:px-20 mx-auto'>
         <div className='bg-white text-black rounded-lg w-full'>
@@ -67,7 +123,7 @@ const ApplyJob = () => {
             </div>
 
             <div className='flex flex-col items-center justify-center text-end text-sm max-md:mx-auto max-md:text-center'>
-              <button className='bg-blue-600 p-2.5 px-10 text-white rounded cursor-pointer'>Apply Now</button>
+              <button onClick={applyHandler} className='bg-blue-600 p-2.5 px-10 text-white rounded cursor-pointer'>{isAlreadyApplied ? 'Already Applied' : 'Apply Now'}</button>
               <p className='mt-2 text-gray-600'>Posted {moment(jobData.date).fromNow()}</p> {/* format date*/}
             </div>
 
@@ -77,26 +133,31 @@ const ApplyJob = () => {
             <div className='w-full lg:w-2/3'>
               <h2 className='font-bold text-2xl mb-4'>Job description</h2>
               <div className='rich-text' dangerouslySetInnerHTML={{ __html: jobData.description }}></div>
-              <button className='bg-blue-600 p-2.5 px-10 text-white rounded mt-10 cursor-pointer'>Apply Now</button>
+              <button onClick={applyHandler} className='bg-blue-600 p-2.5 px-10 text-white rounded mt-10 cursor-pointer'>{isAlreadyApplied ? 'Already Applied' : 'Apply Now'}</button>
             </div>
             {/* Right Side bar */}
             <div className='w-full lg:w-1/3 mt-8 lg:mt-0 lg:ml-8 space-y-5'>
               <h2>More jobs from {jobData.companyId.name}</h2>
-              {jobs.filter( job => job._id !== jobData._id && job.companyId._id === jobData.companyId._id) // filter out the current job and jobs from other companies
-              .filter( job => true ) // true for all jobs (i.e. no filter on level or other)
-              .slice(0,4) // take top 4 jobs
-              .map((job,index) => <JobCard key={index} job={job}/>)}  
+              {jobs.filter(job => job._id !== jobData._id && job.companyId._id === jobData.companyId._id) // filter out the current job and jobs from other companies
+                .filter(job => {
+                  //Set of applied jobs
+                  const appliedJobIds = new Set(userApplications.map(app => app.jobId._id))
+                  //Return true if user has not applied for the job
+                  return !appliedJobIds.has(job._id)
+                })
+                .slice(0, 4) // take top 4 jobs
+                .map((job, index) => <JobCard key={index} job={job} />)}
             </div>
           </div>
 
         </div>
       </div>
 
-      <Footer/>
+      <Footer />
 
     </>
   ) : (
-    <Loading/> // loading screen when job data is not loaded
+    <Loading /> // loading screen when job data is not loaded
   )
 }
 
