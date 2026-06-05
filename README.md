@@ -1,4 +1,4 @@
-# 💼 Job Portal
+# 💼 Insiderjobs
 
 A modern, high-performance, and feature-rich full-stack **Job Portal Application** designed to connect employers with job seekers. Built on the **MERN (MongoDB, Express, React, Node.js)** architecture, the platform features a streamlined application workflow, advanced job search and filtering options, distinct user/company dashboards, Clerk authentication, Sentry performance profiling, Cloudinary media pipeline, and real-time database synchronization via secure webhooks.
 
