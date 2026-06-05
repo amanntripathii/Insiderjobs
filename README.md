@@ -156,14 +156,6 @@ Cache resumeText in MongoDB                  │
 
 ---
 
-## Resume Bullet Points (SDE Role)
-
-- Built a full-stack MERN job portal with dual-role auth (Clerk OAuth + JWT), resume uploads via Cloudinary, and real-time application tracking across **15+ RESTful API endpoints**.
-- Integrated Groq (Llama 3.1) AI to rank candidates by resume-to-JD match score with skill gap analysis; cached results in MongoDB to **eliminate 100% of redundant AI API calls** on re-ranking.
-- Designed a server-side PDF parsing pipeline with dynamic ESM/CJS interop to extract and cache resume text from Cloudinary URLs in MongoDB, reducing per-candidate analysis latency by eliminating repeated PDF downloads on re-runs.
-
----
-
 ## License
 
 MIT
