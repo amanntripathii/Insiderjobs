@@ -1,178 +1,169 @@
-# 💼 Insiderjobs
+# InsiderJobs — AI-Powered Job Portal
 
-A modern, high-performance, and feature-rich full-stack **Job Portal Application** designed to connect employers with job seekers. Built on the **MERN (MongoDB, Express, React, Node.js)** architecture, the platform features a streamlined application workflow, advanced job search and filtering options, distinct user/company dashboards, Clerk authentication, Sentry performance profiling, Cloudinary media pipeline, and real-time database synchronization via secure webhooks.
-
----
-
-## 🚀 Key Features
-
-### 👤 For Job Seekers
-* **Frictionless Onboarding:** Secure and rapid registration/login utilizing **Clerk Auth** integrations.
-* **Advanced Job Discovery:** Real-time job search with multi-tier dynamic filters (job title, geographical location).
-* **Profile Management & Resume Upload:** Upload and update resumes seamlessly, processed via **Multer** and securely stored using **Cloudinary's CDN**.
-* **Application Tracker:** Track real-time status updates of all submitted applications (*Pending, Approved, Rejected*).
-
-### 🏢 For Recruiters & Companies
-* **Dedicated Dashboard:** Complete suite for managing active jobs and viewing applicant pools.
-* **Custom JWT Auth:** Lightweight, highly secure custom token-based company login system.
-* **Job Posting Suite:** Rich-text job description styling with **Quill.js**, specifying levels (Entry, Mid, Senior), categories, compensation, and location.
-* **Applicant Processing Pipeline:** Real-time action buttons to *Approve* or *Reject* applicants, review their profiles, and download their resume directly.
-* **Visibility Control:** Toggle visibility on listed jobs to instantly show or hide them from the public feed.
+A full-stack MERN job portal with dual-role authentication, AI-driven candidate ranking, and real-time application tracking.
 
 ---
 
-## 🛠️ Tech Stack & Services
+## Tech Stack
 
-| Layer | Technologies & Services | Description |
-| :--- | :--- | :--- |
-| **Frontend** | React 19, Vite, Tailwind CSS v4, React Router v7 | Ultra-fast single page application utilizing CSS gradients and robust component flows |
-| **Backend** | Node.js, Express.js (v5.x) | Modern async-await API handling, modular route-controller design |
-| **Database** | MongoDB Atlas, Mongoose | Highly queryable document database utilizing structural data relationships |
-| **Authentication** | Clerk (Users) & Custom JWT (Companies) | Dual-model authentication system catering to different security footprints |
-| **Media Engine** | Cloudinary API, Multer | Automated middleware pipeline for uploading and serving resume PDFs and company logos |
-| **Monitoring** | Sentry SDK, Node Profiling | Real-time production APM for error tracking, memory leaks, and query performance |
-| **Webhooks** | Svix, Clerk Webhooks | Secure event-driven sync pipeline to seamlessly ingest User profiles into MongoDB |
+**Frontend:** React.js · React Router · Axios · Tailwind CSS · Clerk · React Toastify
+
+**Backend:** Node.js · Express.js · MongoDB (Mongoose) · JWT · Multer · Sentry
+
+**AI / Services:** Groq API (Llama 3.1-8b) · pdf-parse · Cloudinary · Clerk Webhooks
+
+**DevOps:** Vercel
 
 ---
 
-## 📁 Repository Structure
+## Features
 
-```text
+### Candidate
+- Sign up / log in via **Clerk OAuth** (Google, GitHub, etc.)
+- Browse and search jobs by title, location, and category
+- Upload resume (PDF) — stored on **Cloudinary**
+- Apply to jobs with one click
+- View application status (Pending / Accepted / Rejected)
+- **AI Match Score** — see your resume's match % against any job before applying, with matched and missing skills breakdown
+
+### Recruiter
+- Register and log in via **JWT-based** company auth
+- Post new jobs with rich text descriptions and salary info
+- Manage all posted jobs (edit, delete)
+- View all applicants per job with resume download
+- Accept or Reject applicants directly from the dashboard
+- **AI Candidate Ranking** — bulk-analyze all applicants with one click using Groq (Llama 3.1), ranked by match score with skill gap analysis
+- Analysis results cached in MongoDB — re-ranking skips already-processed candidates (100% reduction in redundant AI API calls)
+
+---
+
+## Project Structure
+
+```
 Job-Portal/
-├── client/                 # React 19 + Vite Frontend
-│   ├── src/
-│   │   ├── assets/        # Visual resources and standard icons
-│   │   ├── components/    # Reusable UI elements (Navbar, RecruiterLogin, JobCard, etc.)
-│   │   ├── context/       # AppContext state engine (axios calls, user states)
-│   │   ├── pages/         # Page components (Home, AddJob, ApplyJob, Dashboard, etc.)
-│   │   ├── main.jsx       # Client entry point
-│   │   └── index.css      # Core styles & Tailwind directives
-│   ├── package.json
-│   └── vite.config.js
+├── client/                  # React frontend
+│   └── src/
+│       ├── components/      # Navbar, Footer, JobCard, Loading
+│       ├── context/         # AppContext (global state)
+│       └── pages/           # Home, ApplyJob, Applications, Dashboard, ViewApplications
 │
-└── server/                 # Node.js + Express 5.x Backend API
-    ├── config/            # Infrastructure setup (db, Cloudinary, Sentry instrumentation)
-    ├── controllers/       # Route handlers (company, job, user, webhook business logic)
-    ├── middleware/        # Route protection & custom JWT verification
-    ├── models/            # Mongoose Schemas (User, Company, Job, JobApplication)
-    ├── routes/            # Decoupled Express routers
-    ├── utils/             # Helper utilities
-    ├── server.js          # API entryway & Sentry express setup
-    └── package.json
+└── server/                  # Express backend
+    ├── config/              # DB, Cloudinary, Sentry setup
+    ├── controllers/         # userController, companyController, aiController, webhooks
+    ├── middleware/          # authMiddleware (JWT protectCompany)
+    ├── models/              # User, Job, JobApplication, Company
+    ├── routes/              # userRoutes, companyRoutes, jobRoutes, aiRoutes
+    └── services/            # aiService (Groq), pdfService (pdf-parse)
 ```
 
 ---
 
-## ⚙️ Environment Variables
+## Environment Variables
 
-To run the application locally, you will need to set up two `.env` files.
-
-### 1. Backend Environment Configurations
-Create a `.env` file in the `/server` directory:
+### `server/.env`
 
 ```env
-PORT=5000
-JWT_SECRET=your_jwt_secret_here
+JWT_SECRET=your_jwt_secret
 
-# Database Setup
-MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net
+# Groq AI (free at console.groq.com)
+GROQ_API_KEY=gsk_...
 
-# Cloudinary Storage Configurations
-CLOUDINARY_NAME=your_cloudinary_cloud_name
-CLOUDINARY_API_KEY=your_cloudinary_api_key
-CLOUDINARY_SECRET_KEY=your_cloudinary_secret_key
+# MongoDB
+MONGODB_URI=mongodb+srv://...
 
-# Authentication & Webhook Sync (Clerk)
-CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
-CLERK_SECRET_KEY=your_clerk_secret_key
-CLERK_WEBHOOK_SECRET=your_clerk_webhook_secret_here
+# Cloudinary
+CLOUDINARY_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_SECRET_KEY=your_secret
+
+# Clerk
+CLERK_PUBLISHABLE_KEY=pk_...
+CLERK_SECRET_KEY=sk_...
+CLERK_WEBHOOK_SECRET=whsec_...
 ```
 
-### 2. Frontend Environment Configurations
-Create a `.env` file in the `/client` directory:
+### `client/.env`
 
 ```env
-VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
 VITE_BACKEND_URL=http://localhost:5000
+VITE_CLERK_PUBLISHABLE_KEY=pk_...
 ```
 
 ---
 
-## ⚡ Quick Start & Local Setup
+## Getting Started
 
-### Prerequisites
-* **Node.js** (v18+ recommended)
-* **MongoDB** (Local instance or Atlas Cluster)
-* **Clerk**, **Cloudinary**, and **Sentry** active developer accounts.
-
-### Step 1: Clone and Enter the Directory
 ```bash
-git clone https://github.com/your-username/Job-Portal.git
+# 1. Clone the repo
+git clone https://github.com/amanntripathii/Job-Portal.git
 cd Job-Portal
+
+# 2. Install server dependencies
+cd server && npm install
+
+# 3. Install client dependencies
+cd ../client && npm install
+
+# 4. Add environment variables (see above)
+
+# 5. Run both servers
+cd server && npm run server   # runs on :5000
+cd client && npm run dev      # runs on :5173
 ```
 
-### Step 2: Set Up the Backend
-1. Navigate to the server folder:
-   ```bash
-   cd server
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Run in developer mode (using Nodemon for hot reloading):
-   ```bash
-   npm run server
-   ```
+---
 
-### Step 3: Set Up the Frontend
-1. In a new terminal tab, navigate to the client folder:
-   ```bash
-   cd client
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Launch the Vite development server:
-   ```bash
-   npm run dev
-   ```
+## API Overview
 
-Open your browser at `http://localhost:5173` to explore the job portal interface.
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/jobs` | Public | List all jobs |
+| GET | `/api/jobs/:id` | Public | Get job details |
+| POST | `/api/users/apply` | Clerk | Apply for a job |
+| GET | `/api/users/applications` | Clerk | Get applied jobs |
+| POST | `/api/users/update-resume` | Clerk | Upload/update resume |
+| POST | `/api/company/register` | Public | Recruiter registration |
+| POST | `/api/company/login` | Public | Recruiter login |
+| POST | `/api/company/add-job` | JWT | Post a new job |
+| GET | `/api/company/applicants` | JWT | Get all applicants |
+| POST | `/api/company/change-status` | JWT | Accept / Reject applicant |
+| POST | `/api/ai/analyze-job-applications` | JWT | Bulk AI rank applicants |
+| POST | `/api/ai/candidate-match` | Clerk | Candidate AI match score |
 
 ---
 
-## 🔌 API Endpoints Summary
+## AI Architecture
 
-### 🏢 Company & Recruiter Routes (`/api/company`)
-* `POST /register` - Registers a new company with logo image (via Multer/Cloudinary)
-* `POST /login` - Authenticators company email & password, returns custom JWT
-* `GET /company` - Retrieves authenticated company profile
-* `POST /post-job` - Adds a new job listing with level, category, and salary details
-* `GET /applicants` - Fetches all job applications for the logged-in company's postings
-* `GET /list-jobs` - Fetches all jobs posted by the logged-in company
-* `POST /change-status` - Updates an applicant's state (*Approved*, *Rejected*, *Pending*)
-* `POST /change-visibility` - Instantly toggles public search visibility for a listed job
+```
+Recruiter clicks "Rank with AI"
+        │
+        ▼
+For each applicant:
+  ┌─ Resume text cached in DB? ──Yes──► Skip PDF extraction
+  │                                          │
+  No                                         │
+  │                                          │
+  ▼                                          ▼
+Fetch PDF from Cloudinary            Send resumeText + JD to Groq
+Parse with pdf-parse                 (Llama 3.1-8b-instant)
+Cache resumeText in MongoDB                  │
+        │                                    ▼
+        └──────────────────────────► Save matchScore, skills,
+                                     summary → MongoDB
+```
 
-### 💼 Public Job Search Routes (`/api/jobs`)
-* `GET /` - Fetches all visible job listings (populated with Company details)
-* `GET /:id` - Fetches detailed information for a single job listing
-
-### 👤 Job Seeker Routes (`/api/users`)
-* `GET /user` - Fetches metadata for Clerk-authenticated User
-* `POST /apply` - Submits a job application for a specific listing
-* `GET /applications` - Fetches application history and real-time status states
-* `POST /update-resume` - Uploads a PDF resume to Cloudinary and links the URL to the user record
-
----
-
-## 📈 Monitoring & Real-time Synchronization
-* **Sentry APM integration:** Built-in telemetry tracking with `Sentry.init` under `server/config/instrument.js` to log errors, profile node transactions, and analyze Mongoose DB query speeds.
-* **Svix clerk webhooks:** Seamless webhook endpoint at `/webhooks` that safely verifies Clerk signatures. It automatically parses user events (`user.created`, `user.updated`, `user.deleted`) to maintain flawless database state synchronization.
+**Result:** 100% of re-ranking calls skip AI for already-analyzed candidates.
 
 ---
 
-## 📄 License
+## Resume Bullet Points (SDE Role)
 
-Distributed under the **MIT License**. See `LICENSE` for more information.
+- Built a full-stack MERN job portal with dual-role auth (Clerk OAuth + JWT), resume uploads via Cloudinary, and real-time application tracking across **15+ RESTful API endpoints**.
+- Integrated Groq (Llama 3.1) AI to rank candidates by resume-to-JD match score with skill gap analysis; cached results in MongoDB to **eliminate 100% of redundant AI API calls** on re-ranking.
+- Designed a server-side PDF parsing pipeline with dynamic ESM/CJS interop to extract and cache resume text from Cloudinary URLs in MongoDB, reducing per-candidate analysis latency by eliminating repeated PDF downloads on re-runs.
+
+---
+
+## License
+
+MIT

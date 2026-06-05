@@ -13,6 +13,7 @@
   "type": "module",
   "dependencies": {
     "@clerk/express": "^2.1.22",
+    "@google/generative-ai": "^0.24.1",
     "@sentry/node": "^10.54.0",
     "@sentry/profiling-node": "^10.54.0",
     "bcrypt": "^6.0.0",
@@ -20,10 +21,12 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "groq-sdk": "^1.2.1",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.6.2",
     "multer": "^2.1.1",
     "nodemon": "^3.1.14",
+    "pdf-parse": "^2.4.5",
     "svix": "^1.42.0"
   }
 }

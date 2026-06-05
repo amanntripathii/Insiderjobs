@@ -17,6 +17,7 @@ import companyRoutes from './routes/companyRoutes.js'
 import jobRoutes from './routes/jobRoutes.js'
 import userRoutes from './routes/userRoutes.js'
 import {clerkMiddleware} from "@clerk/express"
+import aiRoutes from './routes/aiRoutes.js'
 
 
 
@@ -59,6 +60,8 @@ app.use('/api/company', companyRoutes)
 app.use('/api/jobs', jobRoutes)
 //User routes
 app.use('/api/users', userRoutes)
+//AI routes
+app.use('/api/ai', aiRoutes)
 
 
 

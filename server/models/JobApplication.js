@@ -23,6 +23,14 @@ const JobApplicationSchema = new mongoose.Schema({
     date: {
         type: Number,
         required: true
+    },
+    aiAnalysis: {
+        matchScore:      { type: Number, default: null },
+        candidateSkills: [{ type: String }],
+        requiredSkills:  [{ type: String }],
+        missingSkills:   [{ type: String }],
+        summary:         { type: String, default: '' },
+        lastAnalyzedAt:  { type: Date }
     }
 })
 

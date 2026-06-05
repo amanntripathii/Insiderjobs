@@ -17,6 +17,10 @@ const userSchema = new mongoose.Schema({
     resume: {
         type: String
     },
+    resumeText: {
+        type: String,
+        default: ''
+    },
     image: {
         type: String,
         required: true

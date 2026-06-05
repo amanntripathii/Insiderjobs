@@ -3,6 +3,7 @@ import Job from "../models/Job.js"
 import JobApplication from "../models/JobApplication.js"
 import { v2 as cloudinary } from "cloudinary"
 import { getAuth } from '@clerk/express'
+import { extractTextFromPdfUrl } from '../services/pdfService.js'
 
 //Get user data
 export const getUserData = async(req,res) => {
@@ -119,6 +120,14 @@ export const updateUserResume = async(req,res) => {
         if(resumeFile){
             const resumeUpload = await cloudinary.uploader.upload(resumeFile.path) //Uploading the file to cloudinary
             userData.resume = resumeUpload.secure_url //Storing secure url of the uploaded file in database
+
+            // Extract and cache text so AI doesn't need to re-parse PDF later
+            try {
+                const extractedText = await extractTextFromPdfUrl(resumeUpload.secure_url)
+                userData.resumeText = extractedText
+            } catch (extractErr) {
+                console.warn('Could not extract resume text (non-critical):', extractErr.message)
+            }
         }
 
         await userData.save()

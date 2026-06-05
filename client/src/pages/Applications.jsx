@@ -75,7 +75,6 @@ const Applications = () => {
                 </label>
                 <button onClick={updateResume} className='bg-green-100 border border-green-400 rounded-lg px-4 py-2'>Save</button>
               </> : <div className='flex gap-2'>
-                {/* <a className='bg-blue-100 text-blue-600 px-4 py-2 rounded-lg cursor-pointer' href=""> */}
                 <a className='bg-blue-100 text-blue-600 px-4 py-2 rounded-lg cursor-pointer' href={userData ? userData.resume : "#"} target='_blank' rel='noopener noreferrer'>
                   Resume
                 </a>
@@ -91,8 +90,8 @@ const Applications = () => {
             <tr>
               <th className='py-3 px-4 border-b text-left'>Company</th>
               <th className='py-3 px-4 border-b text-left'>Job Title</th>
-              <th className='py-3 px-4 border-b text-left max-sm:hidden'>Location {/*hide on mobile screen*/}</th>
-              <th className='py-3 px-4 border-b text-left max-sm:hidden'>Date {/*hide on mobile screen*/}</th>
+              <th className='py-3 px-4 border-b text-left max-sm:hidden'>Location</th>
+              <th className='py-3 px-4 border-b text-left max-sm:hidden'>Date</th>
               <th className='py-3 px-4 border-b text-left'>Status</th>
             </tr>
           </thead>
