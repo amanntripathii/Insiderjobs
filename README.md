@@ -1,4 +1,4 @@
-# InsiderJobs — AI-Powered Job Portal
+# InsiderJobs
 
 A full-stack MERN job portal with dual-role authentication, AI-driven candidate ranking, and real-time application tracking.
 
