@@ -70,6 +70,22 @@ Sentry.setupExpressErrorHandler(app);
 
 
 //Start the server
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`)
-})
+// app.listen(PORT, () => {
+//     console.log(`Server is running on port ${PORT}`)
+// })
+
+// Disable Vercel's default bodyParser helper so that express.raw() can read the raw body for Svix/Clerk webhooks
+export const config = {
+    api: {
+        bodyParser: false,
+    },
+};
+
+// Start the server only if running locally, not on Vercel
+if (!process.env.VERCEL) {
+    app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`)
+    })
+}
+
+export default app;

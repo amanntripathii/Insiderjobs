@@ -8,8 +8,19 @@ export const clerkWebhooks = async (req, res)=>{
         //Create a Svix instance with clerk webhook secret
         const whook = new Webhook(process.env.CLERK_WEBHOOK_SECRET)
 
-        // 🚨 FIX 1: Convert the raw buffer to a string for Svix verification
-        const payloadString = req.body.toString('utf8');
+        // // 🚨 FIX 1: Convert the raw buffer to a string for Svix verification
+        // const payloadString = req.body.toString('utf8');
+
+        // 🚨 FIX 1: Safely convert the request body to a string depending on its type
+        let payloadString;
+        if (Buffer.isBuffer(req.body)) {
+            payloadString = req.body.toString('utf8');
+        } else if (typeof req.body === 'string') {
+            payloadString = req.body;
+        } else {
+            payloadString = JSON.stringify(req.body);
+        }
+
 
         //Verifying Headers to ensure req is from clerk
         await whook.verify(payloadString, { //stringify() converts the JS object into JSON string 
