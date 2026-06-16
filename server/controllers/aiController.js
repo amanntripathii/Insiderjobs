@@ -52,6 +52,10 @@ export const analyzeApplication = async (req, res) => {
             return res.json({ success: false, message: 'Application not found' })
         }
 
+        if (!application.userId) {
+            return res.json({ success: false, message: 'Candidate profile not found' })
+        }
+
         const resumeText = await ensureResumeText(
             application.userId._id,
             application.userId.resume
@@ -148,6 +152,10 @@ export const analyzeAllApplicationsForJob = async (req, res) => {
                 }
 
                 try {
+                    if (!application.userId) {
+                        throw new Error('Candidate profile not found in database')
+                    }
+
                     const resumeText = await ensureResumeText(
                         application.userId._id,
                         application.userId.resume
