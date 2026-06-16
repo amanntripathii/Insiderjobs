@@ -8,6 +8,33 @@
  * @param {string} pdfUrl - Public URL of the PDF (e.g., Cloudinary URL)
  * @returns {Promise<string>} Extracted plain text
  */
+// Polyfill for DOMMatrix and DOMMatrixReadOnly which is required by modern pdfjs-dist in Node.js environments
+if (typeof globalThis.DOMMatrix === 'undefined') {
+    globalThis.DOMMatrix = class DOMMatrix {
+        constructor() {
+            this.a = 1; this.b = 0; this.c = 0;
+            this.d = 1; this.e = 0; this.f = 0;
+        }
+        static fromMatrix() { return new DOMMatrix(); }
+        static fromFloat32Array() { return new DOMMatrix(); }
+        static fromFloat64Array() { return new DOMMatrix(); }
+        translate() { return this; }
+        scale() { return this; }
+        multiply() { return this; }
+        inverse() { return this; }
+        transformPoint(p) { return p; }
+    };
+}
+
+if (typeof globalThis.DOMMatrixReadOnly === 'undefined') {
+    globalThis.DOMMatrixReadOnly = class DOMMatrixReadOnly {
+        constructor() {
+            this.a = 1; this.b = 0; this.c = 0;
+            this.d = 1; this.e = 0; this.f = 0;
+        }
+    };
+}
+
 export const extractTextFromPdfUrl = async (pdfUrl) => {
     try {
         const { PDFParse } = await import('pdf-parse')
