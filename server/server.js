@@ -46,7 +46,7 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'token']
 }))
 
-// STEP 3: Connect to DB (non-blocking — a failure must not kill the process)
+// STEP 3: Attempt DB connect at startup (best-effort — may fail on cold starts)
 try {
     await connectDB()
     await connectCloudinary()
@@ -58,8 +58,22 @@ try {
 app.post('/webhooks', express.raw({ type: 'application/json' }), clerkWebhooks)
 app.use(express.json())
 
-// STEP 5: Clerk auth middleware
+// STEP 5: Per-request DB connection guard
+// Ensures the connection is live before hitting any route, even if the
+// startup connect above failed or the serverless container was recycled.
+app.use(async (req, res, next) => {
+    try {
+        await connectDB()
+    } catch (err) {
+        console.error('Per-request DB connection error:', err.message)
+        // Don't block the request — let the route handle the DB error naturally
+    }
+    next()
+})
+
+// STEP 6: Clerk auth middleware
 app.use(clerkMiddleware())
+
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
 app.get('/', (req, res) => {
