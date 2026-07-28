@@ -1,12 +1,30 @@
-import mongoose from "mongoose"; 
+import mongoose from "mongoose";
 
-//Fn to connect to MongoDb Database
+// Cache connection across Vercel serverless warm invocations
+let isConnected = false;
+
 const connectDB = async () => {
 
-    mongoose.connection.on('connected', () => console.log('Database Connected')) //event listener for connection
+    // Reuse existing connection if already open
+    if (isConnected || mongoose.connection.readyState >= 1) {
+        isConnected = true;
+        return;
+    }
 
-    await mongoose.connect(`${process.env.MONGODB_URI}/job-portal`) //connecting to database
+    mongoose.connection.on('connected', () => {
+        console.log('Database Connected');
+        isConnected = true;
+    });
 
+    await mongoose.connect(`${process.env.MONGODB_URI}/job-portal`, {
+        // How long the driver will wait to find an available server
+        serverSelectionTimeoutMS: 10000,
+        // How long a send/receive on the socket is allowed to take
+        socketTimeoutMS: 45000,
+        // Disable mongoose's internal buffering — fail immediately instead of
+        // queuing operations that will timeout after 10 s on cold starts
+        bufferCommands: false,
+    });
 }
 
 export default connectDB

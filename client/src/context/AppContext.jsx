@@ -54,13 +54,23 @@ const AppContextProvider = (props) => {
             if(data.success){
                 setCompanyData(data.company)
                 console.log(data)
-            }else{
-                toast.error(data.message)
+            } else {
+                // Auto-clear stale/expired token so user is prompted to log in again
+                const msg = data.message || ''
+                if (msg.toLowerCase().includes('jwt') || msg.toLowerCase().includes('expired') || msg.toLowerCase().includes('not authorized')) {
+                    localStorage.removeItem('companyToken')
+                    setCompanyToken(null)
+                    setCompanyData(null)
+                    toast.error('Recruiter session expired. Please log in again.')
+                } else {
+                    toast.error(msg)
+                }
             }
         }catch(error){
             toast.error(error.message)
         }
     }
+
 
     //Function to fetch user data
     const fetchUserData = async() => {
