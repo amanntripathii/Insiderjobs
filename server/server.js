@@ -1,5 +1,6 @@
 import './config/instrument.js'
 import dns from 'dns'
+
 // Vercel automatically sets NODE_ENV to 'production'.
 // So, this says: "If we are NOT on Vercel, use the Google fix."
 if (process.env.NODE_ENV !== 'production') {
@@ -16,19 +17,36 @@ import { clerkWebhooks } from './controllers/webhooks.js'
 import companyRoutes from './routes/companyRoutes.js'
 import jobRoutes from './routes/jobRoutes.js'
 import userRoutes from './routes/userRoutes.js'
-import {clerkMiddleware} from "@clerk/express"
+import { clerkMiddleware } from "@clerk/express"
 import aiRoutes from './routes/aiRoutes.js'
-
-
-
-
 
 //Initialize app
 const app = express()
 
+// ─────────────────────────────────────────────────────────────────────────────
+// STEP 1: Raw CORS headers — set manually as the VERY FIRST middleware.
+// This guarantees Access-Control-Allow-Origin is always present, even if a
+// later middleware (DB connection, Sentry, Clerk) throws and returns a 500.
+// ─────────────────────────────────────────────────────────────────────────────
+app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*')
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH')
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, token')
+    // Immediately respond 200 to all OPTIONS preflight requests
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end()
+    }
+    next()
+})
 
+// STEP 2: cors() package as secondary layer
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'token']
+}))
 
-//Connect to Database
+// STEP 3: Connect to DB (non-blocking — a failure must not kill the process)
 try {
     await connectDB()
     await connectCloudinary()
@@ -36,80 +54,37 @@ try {
     console.error('Startup connection error:', err.message)
 }
 
-// CORS — must list every custom header the client sends (token, Authorization)
-const allowedOrigins = [
-    'https://insider-jobs-38ff.vercel.app',
-    'http://localhost:5173',
-    'http://localhost:3000'
-]
+// STEP 4: Body parsers
+app.post('/webhooks', express.raw({ type: 'application/json' }), clerkWebhooks)
+app.use(express.json())
 
-app.use(cors({
-    origin: function (origin, callback) {
-        // allow requests with no origin (mobile apps, curl, etc)
-        if (!origin) return callback(null, true)
-        if (allowedOrigins.indexOf(origin) !== -1) {
-            return callback(null, true)
-        }
-        return callback(null, true) // allow all — remove this line to restrict to allowedOrigins only
-    },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'token'],
-    credentials: false
-}))
-
-// Handle preflight OPTIONS requests for all routes
-app.options('*', cors({
-    origin: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'token']
-}))
-
-app.post('/webhooks', express.raw({ type: 'application/json' }), clerkWebhooks) //webhook endpoint to handle clerk events
-
-app.use(express.json()) // allow json format
-
-//Use clerk middleware for protected routes (authentication)
+// STEP 5: Clerk auth middleware
 app.use(clerkMiddleware())
 
-
-
-//Routes
-app.get('/', (req, res) => { //default route
+// ─── Routes ──────────────────────────────────────────────────────────────────
+app.get('/', (req, res) => {
     res.send('API is working!')
 })
 app.get("/debug-sentry", function mainHandler(req, res) {
-  throw new Error("My first Sentry error!");
-}); //error on the browser at the route: localhost:5000/debug-sentry
+    throw new Error("My first Sentry error!");
+})
 
-//Company routes
 app.use('/api/company', companyRoutes)
-//Job routes
 app.use('/api/jobs', jobRoutes)
-//User routes
 app.use('/api/users', userRoutes)
-//AI routes
 app.use('/api/ai', aiRoutes)
 
-
-
-//Port
+// ─── Sentry error handler (must be after routes) ─────────────────────────────
 const PORT = process.env.PORT || 5000
+Sentry.setupExpressErrorHandler(app)
 
-Sentry.setupExpressErrorHandler(app);
-
-
-
-//Start the server
-// app.listen(PORT, () => {
-//     console.log(`Server is running on port ${PORT}`)
-// })
-
-// Disable Vercel's default bodyParser helper so that express.raw() can read the raw body for Svix/Clerk webhooks
+// Disable Vercel's default bodyParser helper so that express.raw() can read
+// the raw body for Svix/Clerk webhooks
 export const config = {
     api: {
         bodyParser: false,
     },
-};
+}
 
 // Start the server only if running locally, not on Vercel
 if (!process.env.VERCEL) {
@@ -118,4 +93,4 @@ if (!process.env.VERCEL) {
     })
 }
 
-export default app;
+export default app
