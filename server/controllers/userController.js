@@ -88,13 +88,7 @@ export const getUserJobApplications = async(req,res) => {
         .populate('jobId', 'title description salary location level category') //It gives job data for jobId
         .exec()
 
-        if(!applications){
-            return res.json({
-                success: false,
-                message: 'No job applications found'
-            })
-        }
-
+        // Note: find() always returns [] not null, so no null check needed
         res.json({
             success: true,
             applications

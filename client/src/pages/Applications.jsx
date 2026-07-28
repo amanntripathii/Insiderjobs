@@ -96,24 +96,36 @@ const Applications = () => {
             </tr>
           </thead>
           <tbody>
-            {userApplications.map((job, index) => true ? (
-              <tr key={index}>
-                <td className='py-3 px-4 items-center gap-2 border-b'>
-                  <div className="flex items-center gap-2">
-                    <img className='w-8 h-8' src={job.companyId.image} alt="" />
-                    {job.companyId.name}
-                  </div>
-                </td>
-                <td className='py-2 px-4 border-b'>{job.jobId.title}</td>
-                <td className='py-2 px-4 border-b max-sm:hidden'>{job.jobId.location}</td>
-                <td className='py-2 px-4 border-b max-sm:hidden'>{moment(job.date).format('ll')}</td>
-                <td className='py-2 px-4 border-b'>
-                  <span className={`${job.status === 'Accepted' ? 'bg-green-100' : job.status === 'Rejected' ? 'bg-red-100' : 'bg-blue-100'} px-4 py-1.5 rounded`}>
-                    {job.status}
-                  </span>
-                </td>
+            {userApplications.length === 0 ? (
+              <tr>
+                <td colSpan='5' className='py-8 text-center text-gray-400'>No job applications yet. <a href='/' className='text-blue-500 underline'>Browse Jobs</a></td>
               </tr>
-            ) : (null))}
+            ) : (
+              userApplications
+                // Only render rows where both job and company data were successfully populated
+                .filter(job => job.jobId && job.companyId)
+                .map((job, index) => (
+                  <tr key={index}>
+                    <td className='py-3 px-4 items-center gap-2 border-b'>
+                      <div className="flex items-center gap-2">
+                        <img className='w-8 h-8' src={job.companyId.image} alt="" />
+                        {job.companyId.name}
+                      </div>
+                    </td>
+                    <td className='py-2 px-4 border-b'>{job.jobId.title}</td>
+                    <td className='py-2 px-4 border-b max-sm:hidden'>{job.jobId.location}</td>
+                    <td className='py-2 px-4 border-b max-sm:hidden'>{moment(job.date).format('ll')}</td>
+                    <td className='py-2 px-4 border-b'>
+                      <span className={`${
+                        job.status === 'Accepted' ? 'bg-green-100' :
+                        job.status === 'Rejected'  ? 'bg-red-100'   : 'bg-blue-100'
+                      } px-4 py-1.5 rounded`}>
+                        {job.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+            )}
           </tbody>
         </table>
       </div>
