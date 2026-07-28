@@ -18,12 +18,13 @@ const connectDB = async () => {
 
     await mongoose.connect(`${process.env.MONGODB_URI}/job-portal`, {
         // How long the driver will wait to find an available server
-        serverSelectionTimeoutMS: 10000,
+        serverSelectionTimeoutMS: 30000,
         // How long a send/receive on the socket is allowed to take
         socketTimeoutMS: 45000,
-        // Disable mongoose's internal buffering — fail immediately instead of
-        // queuing operations that will timeout after 10 s on cold starts
-        bufferCommands: false,
+        // How long Mongoose will buffer a query waiting for a connection.
+        // Do NOT set bufferCommands: false — it makes queries throw immediately
+        // on cold starts before the connection handshake finishes.
+        bufferTimeoutMS: 30000,
     });
 }
 
