@@ -29,13 +29,40 @@ const app = express()
 
 
 //Connect to Database
-await connectDB() //asynchronous function so we use await
-await connectCloudinary()
+try {
+    await connectDB()
+    await connectCloudinary()
+} catch (err) {
+    console.error('Startup connection error:', err.message)
+}
 
+// CORS — must list every custom header the client sends (token, Authorization)
+const allowedOrigins = [
+    'https://insider-jobs-38ff.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:3000'
+]
 
+app.use(cors({
+    origin: function (origin, callback) {
+        // allow requests with no origin (mobile apps, curl, etc)
+        if (!origin) return callback(null, true)
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            return callback(null, true)
+        }
+        return callback(null, true) // allow all — remove this line to restrict to allowedOrigins only
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'token'],
+    credentials: false
+}))
 
-//Middlewares
-app.use(cors()) //allow cross origin requests
+// Handle preflight OPTIONS requests for all routes
+app.options('*', cors({
+    origin: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'token']
+}))
 
 app.post('/webhooks', express.raw({ type: 'application/json' }), clerkWebhooks) //webhook endpoint to handle clerk events
 
