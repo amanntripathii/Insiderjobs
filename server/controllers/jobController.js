@@ -4,13 +4,24 @@ import Job from "../models/Job.js"
 export const getJobs = async(req,res) => {
 
     try{
+        const page = Math.max(1, parseInt(req.query.page) || 1)
+        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 100))
+        const skip = (page - 1) * limit
 
         const jobs = await Job.find({visible: true}) // Only visible jobs are fetched
         .populate({path: 'companyId', select: '-password'}) // Populates company data and excludes password
+        .sort({ date: -1 }) // Newest first
+        .skip(skip)
+        .limit(limit)
+
+        const total = await Job.countDocuments({visible: true})
 
         res.json({
             success: true,
-            jobs
+            jobs,
+            total,
+            page,
+            pages: Math.ceil(total / limit)
         })
 
     }catch(error){

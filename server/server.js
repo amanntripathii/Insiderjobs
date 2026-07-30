@@ -9,6 +9,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 import express from 'express'
 import cors from 'cors'
+import rateLimit from 'express-rate-limit'
 import 'dotenv/config'
 import connectDB from './config/db.js'
 import connectCloudinary from './config/cloudinary.js'
@@ -24,24 +25,35 @@ import aiRoutes from './routes/aiRoutes.js'
 const app = express()
 
 // ─────────────────────────────────────────────────────────────────────────────
-// STEP 1: Raw CORS headers — set manually as the VERY FIRST middleware.
-// This guarantees Access-Control-Allow-Origin is always present, even if a
-// later middleware (DB connection, Sentry, Clerk) throws and returns a 500.
+// STEP 1: CORS — locked to ALLOWED_ORIGINS in production, permissive in dev.
+// Set ALLOWED_ORIGINS in your .env to a comma-separated list of frontend URLs,
+// e.g. ALLOWED_ORIGINS=https://your-app.vercel.app,https://www.your-app.com
 // ─────────────────────────────────────────────────────────────────────────────
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim())
+    : null // null = allow all origins in development
+
 app.use((req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*')
+    const origin = req.headers.origin
+    if (!allowedOrigins) {
+        // Development: allow everything
+        res.setHeader('Access-Control-Allow-Origin', '*')
+    } else if (origin && allowedOrigins.includes(origin)) {
+        // Production: only allow whitelisted origins
+        res.setHeader('Access-Control-Allow-Origin', origin)
+        res.setHeader('Vary', 'Origin')
+    }
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH')
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, token')
-    // Immediately respond 200 to all OPTIONS preflight requests
     if (req.method === 'OPTIONS') {
         return res.status(200).end()
     }
     next()
 })
 
-// STEP 2: cors() package as secondary layer
+// STEP 1b: cors() package as secondary layer
 app.use(cors({
-    origin: '*',
+    origin: allowedOrigins || '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'token']
 }))
@@ -57,6 +69,27 @@ try {
 // STEP 4: Body parsers
 app.post('/webhooks', express.raw({ type: 'application/json' }), clerkWebhooks)
 app.use(express.json())
+
+// ─── STEP 4b: Rate Limiting ──────────────────────────────────────────────────
+// Global limiter: 100 requests per 15 minutes per IP
+const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, message: 'Too many requests, please try again later' }
+})
+
+// Strict limiter for expensive/sensitive endpoints: 10 requests per minute per IP
+const strictLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, message: 'Rate limit exceeded. Please wait before retrying.' }
+})
+
+app.use(globalLimiter)
 
 // STEP 5: Per-request DB connection guard
 // Ensures the connection is live before hitting any route, even if the
@@ -83,10 +116,12 @@ app.get("/debug-sentry", function mainHandler(req, res) {
     throw new Error("My first Sentry error!");
 })
 
+app.use('/api/company/login', strictLimiter)            // Prevent brute-force login attempts
+app.use('/api/company/register', strictLimiter)         // Prevent registration spam
 app.use('/api/company', companyRoutes)
 app.use('/api/jobs', jobRoutes)
 app.use('/api/users', userRoutes)
-app.use('/api/ai', aiRoutes)
+app.use('/api/ai', strictLimiter, aiRoutes)           // AI endpoints are expensive (LLM calls)
 
 // ─── Sentry error handler (must be after routes) ─────────────────────────────
 const PORT = process.env.PORT || 5000

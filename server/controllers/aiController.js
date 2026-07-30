@@ -143,53 +143,62 @@ export const analyzeAllApplicationsForJob = async (req, res) => {
             return res.json({ success: true, applications: [] })
         }
 
-        // Process each application — skip if already analyzed
-        const results = await Promise.allSettled(
-            applications.map(async (application) => {
-                // Skip only if already SUCCESSFULLY analyzed (matchScore is not null)
-                if (application.aiAnalysis?.lastAnalyzedAt && application.aiAnalysis?.matchScore !== null) {
+        // Process in batches of 5 to avoid Vercel timeout and Groq API throttling
+        const BATCH_SIZE = 5
+        const results = []
+
+        for (let i = 0; i < applications.length; i += BATCH_SIZE) {
+            const batch = applications.slice(i, i + BATCH_SIZE)
+
+            const batchResults = await Promise.allSettled(
+                batch.map(async (application) => {
+                    // Skip if already successfully analyzed
+                    if (application.aiAnalysis?.lastAnalyzedAt && application.aiAnalysis?.matchScore !== null) {
+                        return application
+                    }
+
+                    try {
+                        if (!application.userId) {
+                            throw new Error('Candidate profile not found in database')
+                        }
+
+                        const resumeText = await ensureResumeText(
+                            application.userId._id,
+                            application.userId.resume
+                        )
+
+                        const analysis = await analyzeResumeJobMatch(
+                            resumeText,
+                            job.description,
+                            job.title
+                        )
+
+                        application.aiAnalysis = {
+                            ...analysis,
+                            lastAnalyzedAt: new Date()
+                        }
+                        await application.save()
+
+                    } catch (err) {
+                        const errMsg = err.message || 'Unknown error'
+                        console.error(`AI analysis failed for application ${application._id}:`, errMsg)
+                        application.aiAnalysis = {
+                            matchScore: null,
+                            candidateSkills: [],
+                            requiredSkills: [],
+                            missingSkills: [],
+                            summary: `Analysis failed: ${errMsg}`,
+                            lastAnalyzedAt: new Date()
+                        }
+                        await application.save()
+                    }
+
                     return application
-                }
+                })
+            )
 
-                try {
-                    if (!application.userId) {
-                        throw new Error('Candidate profile not found in database')
-                    }
-
-                    const resumeText = await ensureResumeText(
-                        application.userId._id,
-                        application.userId.resume
-                    )
-
-                    const analysis = await analyzeResumeJobMatch(
-                        resumeText,
-                        job.description,
-                        job.title
-                    )
-
-                    application.aiAnalysis = {
-                        ...analysis,
-                        lastAnalyzedAt: new Date()
-                    }
-                    await application.save()
-
-                } catch (err) {
-                    const errMsg = err.message || 'Unknown error'
-                    console.error(`AI analysis failed for application ${application._id}:`, errMsg)
-                    application.aiAnalysis = {
-                        matchScore: null,
-                        candidateSkills: [],
-                        requiredSkills: [],
-                        missingSkills: [],
-                        summary: `Analysis failed: ${errMsg}`,
-                        lastAnalyzedAt: new Date()
-                    }
-                    await application.save()
-                }
-
-                return application
-            })
-        )
+            results.push(...batchResults)
+        }
 
         // Extract successful results and sort by matchScore descending (nulls last)
         const analyzedApplications = results

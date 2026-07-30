@@ -129,13 +129,28 @@ export const postJob = async(req,res) => {
 
     const companyId = req.company._id
 
+    // ── Input validation ──
+    if (!title || !description || !location || !level || !category) {
+        return res.status(422).json({ success: false, message: 'All fields (title, description, location, level, category, salary) are required' })
+    }
+
+    const parsedSalary = Number(salary)
+    if (!Number.isFinite(parsedSalary) || parsedSalary <= 0) {
+        return res.status(422).json({ success: false, message: 'Salary must be a positive number' })
+    }
+
+    const allowedLevels = ['Beginner level', 'Intermediate level', 'Senior level']
+    if (!allowedLevels.includes(level)) {
+        return res.status(422).json({ success: false, message: `Level must be one of: ${allowedLevels.join(', ')}` })
+    }
+
     try{
         
         const newJob = new Job({
-            title,
+            title: title.trim(),
             description,
-            location,
-            salary,
+            location: location.trim(),
+            salary: parsedSalary,
             level,
             category,
             companyId,
@@ -185,13 +200,26 @@ export const getCompanyPostedJobs = async(req,res) => {
     try{
         const companyId = req.company._id
 
-        const jobs = await Job.find({companyId})
-
-        //Adding no. of job applicants info in data
-        const jobsData = await Promise.all(jobs.map(async(job) => {
-            const applicants = await JobApplication.find({jobId: job._id})
-            return {...job.toObject(), applicants: applicants.length}
-        })) 
+        // Single aggregation instead of N+1 queries
+        const jobsData = await Job.aggregate([
+            { $match: { companyId: companyId } },
+            {
+                $lookup: {
+                    from: 'jobapplications',       // MongoDB collection name (lowercase + plural)
+                    localField: '_id',
+                    foreignField: 'jobId',
+                    as: 'applicationList'
+                }
+            },
+            {
+                $addFields: {
+                    applicants: { $size: '$applicationList' }
+                }
+            },
+            {
+                $project: { applicationList: 0 }   // Drop the full array, keep only the count
+            }
+        ])
 
         res.json({
             success: true,
@@ -206,13 +234,28 @@ export const getCompanyPostedJobs = async(req,res) => {
 }
 
 //Change job application status
+const VALID_STATUSES = ['Accepted', 'Rejected', 'Pending']
+
 export const changeJobApplicationStatus = async(req,res) => {
 
     try{
         const {id, status} = req.body
 
+        // ── Input validation ──
+        if (!id || !status) {
+            return res.status(422).json({ success: false, message: 'id and status are required' })
+        }
+
+        if (!VALID_STATUSES.includes(status)) {
+            return res.status(422).json({ success: false, message: `Status must be one of: ${VALID_STATUSES.join(', ')}` })
+        }
+
         //Find job application and update status
-        await JobApplication.findOneAndUpdate({_id: id}, {status})
+        const updated = await JobApplication.findOneAndUpdate({_id: id}, {status})
+
+        if (!updated) {
+            return res.status(404).json({ success: false, message: 'Application not found' })
+        }
 
         res.json({
             success: true,

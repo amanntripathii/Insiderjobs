@@ -34,5 +34,13 @@ const JobApplicationSchema = new mongoose.Schema({
     }
 })
 
+// ─── Indexes for query performance ───────────────────────────────────────────
+// Prevents duplicate applications at the DB level and speeds up lookups
+JobApplicationSchema.index({ jobId: 1, userId: 1 }, { unique: true })
+// Recruiter dashboard: fetch all applications for a company
+JobApplicationSchema.index({ companyId: 1 })
+// Candidate dashboard: fetch all applications by a user
+JobApplicationSchema.index({ userId: 1 })
+
 const JobApplication = mongoose.models.JobApplication || mongoose.model('JobApplication', JobApplicationSchema);
 export default JobApplication
