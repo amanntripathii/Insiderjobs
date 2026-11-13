@@ -13,7 +13,7 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
  *   matchScore: number,
  *   candidateSkills: string[],
  *   requiredSkills: string[],
- *   missingSkills: string[],
+ *   missingSkills: string
  *   summary: string
  * }>}
  */
@@ -41,7 +41,7 @@ Return ONLY valid JSON in exactly this format (no markdown, no extra text):
     try {
         const completion = await groq.chat.completions.create({
             messages: [{ role: 'user', content: prompt }],
-            model: 'llama-3.1-8b-instant',
+            model: 'openai/gpt-oss-20b',
             response_format: { type: 'json_object' },
             temperature: 0.3,
         })
